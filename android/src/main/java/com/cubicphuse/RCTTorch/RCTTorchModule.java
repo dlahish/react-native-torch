@@ -48,22 +48,27 @@ public class RCTTorchModule extends ReactContextBaseJavaModule {
             }
         } else {
             Camera.Parameters params;
+            try {
+                if (!isTorchOn) {
+                    camera = Camera.open();
+                    params = camera.getParameters();
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                    camera.setParameters(params);
+                    camera.startPreview();
+                    isTorchOn = true;
+                } else {
+                    params = camera.getParameters();
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
 
-            if (!isTorchOn) {
-                camera = Camera.open();
-                params = camera.getParameters();
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-                camera.setParameters(params);
-                camera.startPreview();
-                isTorchOn = true;
-            } else {
-                params = camera.getParameters();
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-
-                camera.setParameters(params);
-                camera.stopPreview();
-                camera.release();
-                isTorchOn = false;
+                    camera.setParameters(params);
+                    camera.stopPreview();
+                    camera.release();
+                    isTorchOn = false;
+                }
+                successCallback.invoke(true);
+            } catch (Exception e) {
+                String errorMessage = e.getMessage();
+                failureCallback.invoke("Error: " + errorMessage);
             }
         }
     }
