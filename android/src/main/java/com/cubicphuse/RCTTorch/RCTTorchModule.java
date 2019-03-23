@@ -17,7 +17,7 @@ import com.facebook.react.bridge.ReactMethod;
 
 public class RCTTorchModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext myReactContext;
-    private Boolean isTorchOn = false;
+    private Boolean isOpen = false;
     private Camera camera;
 
     public RCTTorchModule(ReactApplicationContext reactContext) {
@@ -49,23 +49,35 @@ public class RCTTorchModule extends ReactContextBaseJavaModule {
         } else {
             Camera.Parameters params;
             try {
-                if (!isTorchOn) {
-                    camera = Camera.open();
-                    params = camera.getParameters();
-                    params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-                    camera.setParameters(params);
-                    camera.startPreview();
-                    isTorchOn = true;
+                if (newState) {
+                    if (isOpen) {
+                        successCallback.invoke(true);
+                    } else {
+                        if (camera != null) {
+                            camera.release();
+                            camera = null;
+                        }
+                        camera = Camera.open();
+                        isOpen = true;
+                        params = camera.getParameters();
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        successCallback.invoke(true);
+                    }
                 } else {
-                    params = camera.getParameters();
-                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-
-                    camera.setParameters(params);
-                    camera.stopPreview();
-                    camera.release();
-                    isTorchOn = false;
+                    if (!isOpen) {
+                        successCallback.invoke(true);
+                    } else {
+                        params = camera.getParameters();
+                        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                        camera.setParameters(params);
+                        camera.stopPreview();
+                        camera.release();
+                        isOpen = false;
+                        successCallback.invoke(true);
+                    }
                 }
-                successCallback.invoke(true);
             } catch (Exception e) {
                 String errorMessage = e.getMessage();
                 failureCallback.invoke("Error: " + errorMessage);
